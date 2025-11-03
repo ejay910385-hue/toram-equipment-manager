@@ -107,8 +107,26 @@
 
             // 保存數據
             const saveItems = (itemsToSave) => {
-                storage.set('equipment-items', JSON.stringify(itemsToSave));
+                // 保存到 localStorage
+                const data = JSON.stringify(itemsToSave);
+                localStorage.setItem('equipment-items', data);
+                
+                // 觸發 storage 事件（用於其他標籤頁）
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: 'equipment-items',
+                    newValue: data,
+                    oldValue: localStorage.getItem('equipment-items'),
+                    storageArea: localStorage,
+                    url: window.location.href
+                }));
+                
+                // 觸發自定義事件（用於同頁面）
+                window.dispatchEvent(new CustomEvent('local-storage-update'));
+                
+                // 更新狀態
                 setItems([...itemsToSave]);
+                
+                console.log('數據已保存:', itemsToSave);
             };
 
             // 處理登入

@@ -62,9 +62,12 @@
             const loadItems = async () => {
                 try {
                     setIsLoading(true);
-                    const { value } = await window.storage.get('equipment-items');
-                    const parsedItems = JSON.parse(value || '[]');
+                    // 直接從 localStorage 讀取 equipment-items
+                    const storedData = localStorage.getItem('equipment-items');
+                    console.log('從 localStorage 讀取的數據:', storedData);
+                    const parsedItems = storedData ? JSON.parse(storedData) : [];
                     const validItems = Array.isArray(parsedItems) ? parsedItems : [];
+                    console.log('解析後的物品列表:', validItems);
                     setItems(validItems);
                     setFilteredItems(validItems);
                     setError('');
@@ -82,13 +85,28 @@
                 
                 // 監聽 storage 事件，當其他頁面更新數據時自動刷新
                 const handleStorageChange = (e) => {
+                    console.log('檢測到 storage 變化:', e);
                     if (e.key === 'equipment-items') {
+                        console.log('equipment-items 已更新，重新加載數據...');
                         loadItems();
                     }
                 };
                 
+                // 添加事件監聽器
                 window.addEventListener('storage', handleStorageChange);
-                return () => window.removeEventListener('storage', handleStorageChange);
+                
+                // 添加自定義事件監聽器，用於同頁面內通信
+                const handleCustomStorageChange = () => {
+                    console.log('檢測到自定義存儲事件，重新加載數據...');
+                    loadItems();
+                };
+                window.addEventListener('local-storage-update', handleCustomStorageChange);
+                
+                // 清理函數
+                return () => {
+                    window.removeEventListener('storage', handleStorageChange);
+                    window.removeEventListener('local-storage-update', handleCustomStorageChange);
+                };
             }, []);
 
             const handleSearch = (term) => {
