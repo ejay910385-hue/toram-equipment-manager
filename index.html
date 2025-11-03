@@ -23,15 +23,17 @@
             </svg>
         );
 
-        // 使用 localStorage 儲存
+        // 使用 localStorage 儲存，確保與 equipment-admin.html 使用相同的 key
         window.storage = {
             async get(key) {
                 try {
-                    const value = localStorage.getItem(key);
-                    return { key, value: value || '[]' };
+                    // 確保使用 'equipment-items' 作為 key
+                    const storageKey = 'equipment-items';
+                    const value = localStorage.getItem(storageKey);
+                    return { key: storageKey, value: value || '[]' };
                 } catch (error) {
                     console.error('獲取數據失敗:', error);
-                    return { key, value: '[]' };
+                    return { key: 'equipment-items', value: '[]' };
                 }
             },
             
@@ -60,9 +62,12 @@
             const loadItems = async () => {
                 try {
                     setIsLoading(true);
-                    const { value } = await window.storage.get('items');
-                    const parsedItems = JSON.parse(value);
-                    setItems(Array.isArray(parsedItems) ? parsedItems : []);
+                    const { value } = await window.storage.get('equipment-items');
+                    const parsedItems = JSON.parse(value || '[]');
+                    const validItems = Array.isArray(parsedItems) ? parsedItems : [];
+                    setItems(validItems);
+                    setFilteredItems(validItems);
+                    setError('');
                 } catch (error) {
                     console.error('載入物品失敗:', error);
                     setError('載入物品失敗: ' + error.message);
@@ -74,22 +79,16 @@
             // 初始化載入
             useEffect(() => {
                 loadItems();
-            }, []);
-
-            useEffect(() => {
-                const loadItems = async () => {
-                    try {
-                        const result = await window.storage.get('equipment-items');
-                        if (result && result.value) {
-                            const itemsData = JSON.parse(result.value);
-                            setItems(itemsData);
-                            setFilteredItems(itemsData);
-                        }
-                    } catch (error) {
-                        console.error('讀取資料失敗:', error);
+                
+                // 監聽 storage 事件，當其他頁面更新數據時自動刷新
+                const handleStorageChange = (e) => {
+                    if (e.key === 'equipment-items') {
+                        loadItems();
                     }
                 };
-                loadItems();
+                
+                window.addEventListener('storage', handleStorageChange);
+                return () => window.removeEventListener('storage', handleStorageChange);
             }, []);
 
             const handleSearch = (term) => {
