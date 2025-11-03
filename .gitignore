@@ -1,0 +1,14 @@
+# 壓縮文件
+*.zip
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# 環境變量
+.env
+
+# 依賴文件
+node_modules/
+__pycache__/
+*.pyc
