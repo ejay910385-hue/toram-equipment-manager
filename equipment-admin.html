@@ -55,14 +55,32 @@
         );
 
         // 本地存儲
-        const storage = {
-            get: (key) => {
-                const value = localStorage.getItem(key);
-                return value ? { key, value } : null;
+        window.storage = {
+            async get(key) {
+                try {
+                    const value = localStorage.getItem(key);
+                    return { key, value: value || '[]' };
+                } catch (error) {
+                    console.error('獲取數據失敗:', error);
+                    return { key, value: '[]' };
+                }
             },
-            set: (key, value) => {
-                localStorage.setItem(key, value);
-                return { key, value };
+            async set(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    // 觸發 storage 事件
+                    window.dispatchEvent(new StorageEvent('storage', {
+                        key,
+                        newValue: value,
+                        oldValue: localStorage.getItem(key),
+                        storageArea: localStorage,
+                        url: window.location.href
+                    }));
+                    return { key, value };
+                } catch (error) {
+                    console.error('保存數據失敗:', error);
+                    throw error;
+                }
             }
         };
 
@@ -106,27 +124,23 @@
             }, []);
 
             // 保存數據
-            const saveItems = (itemsToSave) => {
-                // 保存到 localStorage
-                const data = JSON.stringify(itemsToSave);
-                localStorage.setItem('equipment-items', data);
-                
-                // 觸發 storage 事件（用於其他標籤頁）
-                window.dispatchEvent(new StorageEvent('storage', {
-                    key: 'equipment-items',
-                    newValue: data,
-                    oldValue: localStorage.getItem('equipment-items'),
-                    storageArea: localStorage,
-                    url: window.location.href
-                }));
-                
-                // 觸發自定義事件（用於同頁面）
-                window.dispatchEvent(new CustomEvent('local-storage-update'));
-                
-                // 更新狀態
-                setItems([...itemsToSave]);
-                
-                console.log('數據已保存:', itemsToSave);
+            const saveItems = async (itemsToSave) => {
+                try {
+                    // 使用 storage.set 方法保存數據
+                    const data = JSON.stringify(itemsToSave);
+                    await window.storage.set('equipment-items', data);
+                    
+                    // 觸發自定義事件（用於同頁面）
+                    window.dispatchEvent(new CustomEvent('local-storage-update'));
+                    
+                    // 更新狀態
+                    setItems([...itemsToSave]);
+                    
+                    console.log('數據已保存:', itemsToSave);
+                } catch (error) {
+                    console.error('保存數據時出錯:', error);
+                    alert('保存數據時出錯: ' + error.message);
+                }
             };
 
             // 處理登入
