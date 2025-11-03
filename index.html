@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/storage.js"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
     <div id="root"></div>
@@ -23,25 +24,7 @@
             </svg>
         );
 
-        // 使用 localStorage 儲存，確保與 equipment-admin.html 使用相同的 key
-        window.storage = {
-            async get(key) {
-                try {
-                    // 確保使用 'equipment-items' 作為 key
-                    const storageKey = 'equipment-items';
-                    const value = localStorage.getItem(storageKey);
-                    return { key: storageKey, value: value || '[]' };
-                } catch (error) {
-                    console.error('獲取數據失敗:', error);
-                    return { key: 'equipment-items', value: '[]' };
-                }
-            },
-            
-            async set() {
-                console.log('查詢頁面不執行保存操作');
-                return { key: null, value: null };
-            }
-        };
+        // 使用共享的 storage.js 中的 storage 對象
 
         const App = () => {
             const [searchTerm, setSearchTerm] = useState('');
@@ -62,7 +45,7 @@
             const loadItems = async () => {
                 try {
                     setIsLoading(true);
-                    // 使用 storage.get 方法讀取數據
+                    // 直接從 localStorage 讀取 equipment-items
                     const result = await window.storage.get('equipment-items');
                     console.log('從 storage 讀取的數據:', result);
                     const parsedItems = result && result.value ? JSON.parse(result.value) : [];

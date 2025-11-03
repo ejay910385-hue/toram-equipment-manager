@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/storage.js"></script>
     <style>
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -54,35 +56,7 @@
             </svg>
         );
 
-        // 本地存儲
-        window.storage = {
-            async get(key) {
-                try {
-                    const value = localStorage.getItem(key);
-                    return { key, value: value || '[]' };
-                } catch (error) {
-                    console.error('獲取數據失敗:', error);
-                    return { key, value: '[]' };
-                }
-            },
-            async set(key, value) {
-                try {
-                    localStorage.setItem(key, value);
-                    // 觸發 storage 事件
-                    window.dispatchEvent(new StorageEvent('storage', {
-                        key,
-                        newValue: value,
-                        oldValue: localStorage.getItem(key),
-                        storageArea: localStorage,
-                        url: window.location.href
-                    }));
-                    return { key, value };
-                } catch (error) {
-                    console.error('保存數據失敗:', error);
-                    throw error;
-                }
-            }
-        };
+        // 使用共享的 storage.js 中的 storage 對象
 
         const App = () => {
             const [items, setItems] = useState([]);
@@ -110,18 +84,18 @@
                 }
             };
 
-            // 加載數據
-            useEffect(() => {
-                const savedItems = storage.get('equipment-items');
-                if (savedItems && savedItems.value) {
-                    setItems(JSON.parse(savedItems.value));
+            // 載入數據
+            const loadItems = async () => {
+                try {
+                    const result = await window.storage.get('equipment-items');
+                    console.log('從 storage 載入的數據:', result);
+                    const itemsData = result && result.value ? JSON.parse(result.value) : [];
+                    console.log('解析後的物品列表:', itemsData);
+                    setItems(Array.isArray(itemsData) ? itemsData : []);
+                } catch (error) {
+                    console.error('載入物品失敗:', error);
                 }
-                
-                const savedAdmin = localStorage.getItem('isAdmin');
-                if (savedAdmin === 'true') {
-                    setIsAdmin('admin');
-                }
-            }, []);
+            };
 
             // 保存數據
             const saveItems = async (itemsToSave) => {
@@ -204,6 +178,15 @@
                     saveItems(updated);
                 }
             };
+
+            useEffect(() => {
+                loadItems();
+                
+                const savedAdmin = localStorage.getItem('isAdmin');
+                if (savedAdmin === 'true') {
+                    setIsAdmin('admin');
+                }
+            }, []);
 
             // 登入頁面
             if (isAdmin === null) {
